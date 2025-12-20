@@ -154,7 +154,7 @@ export default function Dashboard() {
             Welcome back, {userName}! 👋
           </h1>
           <p className="text-gray-600">
-            Track and support your students’ learning journey
+            Track and support your childs learning journey
           </p>
         </div>
 
