@@ -13,7 +13,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No report data provided' }, { status: 400 });
     }
 
-    // Define borders
     const tableBorder = { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" };
     const cellBorders = { 
       top: tableBorder, 
@@ -22,12 +21,11 @@ export async function POST(request: NextRequest) {
       right: tableBorder 
     };
 
-    // Create document
     const doc = new Document({
       styles: {
         default: {
           document: {
-            run: { font: "Arial", size: 24 } // 12pt default
+            run: { font: "Arial", size: 24 } 
           }
         },
         paragraphStyles: [
@@ -109,7 +107,6 @@ export async function POST(request: NextRequest) {
             }
           },
           children: [
-            // ========== TITLE ==========
             new Paragraph({
               heading: HeadingLevel.TITLE,
               children: [new TextRun("Learning Assessment Report")]
@@ -121,9 +118,8 @@ export async function POST(request: NextRequest) {
               children: [new TextRun(`Generated on ${new Date(report.generatedAt).toLocaleDateString()}`)]
             }),
 
-            new Paragraph({ children: [new TextRun("")] }), // Spacer
+            new Paragraph({ children: [new TextRun("")] }), 
 
-            // ========== STUDENT INFORMATION TABLE ==========
             new Paragraph({
               heading: HeadingLevel.HEADING_1,
               children: [new TextRun("Student Information")]
@@ -193,9 +189,8 @@ export async function POST(request: NextRequest) {
               ]
             }),
 
-            new Paragraph({ children: [new TextRun("")] }), // Spacer
+            new Paragraph({ children: [new TextRun("")] }), 
 
-            // ========== EXECUTIVE SUMMARY ==========
             new Paragraph({
               heading: HeadingLevel.HEADING_1,
               children: [new TextRun("Executive Summary")]
@@ -206,18 +201,15 @@ export async function POST(request: NextRequest) {
               children: [new TextRun(report.executiveSummary)]
             }),
 
-            // ========== COGNITIVE DOMAIN SCORES ==========
             new Paragraph({
               heading: HeadingLevel.HEADING_1,
               children: [new TextRun("Cognitive Domain Performance")]
             }),
 
-            // Create score table
             new Table({
               columnWidths: [3120, 2340, 3900],
               margins: { top: 100, bottom: 100, left: 180, right: 180 },
               rows: [
-                // Header row
                 new TableRow({
                   tableHeader: true,
                   children: [
@@ -250,7 +242,6 @@ export async function POST(request: NextRequest) {
                     })
                   ]
                 }),
-                // Score rows
                 ...report.detailedScores.map((domain: any) => 
                   new TableRow({
                     children: [
@@ -288,7 +279,6 @@ export async function POST(request: NextRequest) {
 
             new Paragraph({ children: [new TextRun("")] }), // Spacer
 
-            // ========== DETAILED METRICS ==========
             new Paragraph({
               heading: HeadingLevel.HEADING_1,
               children: [new TextRun("Detailed Performance Metrics")]
@@ -327,7 +317,6 @@ export async function POST(request: NextRequest) {
               new Paragraph({ children: [new TextRun("")] }) // Spacer
             ]),
 
-            // ========== PAGE BREAK ==========
             new Paragraph({ children: [new PageBreak()] }),
 
             // ========== STRENGTHS ==========

@@ -18,14 +18,65 @@ import {
 import EditStudentModal from "../../components/EditStudentModal";
 import ReportDisplay from "../../components/ReportDisplay";
 
+// Add proper type definitions
+interface Student {
+  id: string;
+  name: string;
+  age: number;
+  dateOfBirth?: string;
+  parentContact?: string;
+  lastAssessmentDate?: any;
+  currentAssessmentId?: string;
+}
+
+interface GameResult {
+  gameId: string;
+  gameName?: string;
+  domain: string;
+  accuracy: number;
+  avgReaction?: number;
+  hits?: number;
+  misses?: number;
+  falseTaps?: number;
+  correct?: number;
+  wrong?: number;
+  totalRounds?: number;
+  correctRounds?: number;
+  maxSequenceLength?: number;
+}
+
+interface Assessment {
+  id: string;
+  results?: GameResult[];
+  completedAt?: any;
+  report?: any;
+  reportGenerated?: boolean;
+  reportGeneratedAt?: any;
+  status?: string;
+}
+
+interface Metric {
+  label: string;
+  value: string | number;
+}
+
+interface DetailedScore {
+  name: string;
+  domain: string;
+  gameUsed: string;
+  score: number;
+  metrics: Metric[];
+  rawData: GameResult;
+}
+
 export default function StudentProfile() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const studentId = params.id as string;
 
-  const [student, setStudent] = useState<any>(null);
-  const [assessment, setAssessment] = useState<any>(null);
+  const [student, setStudent] = useState<Student | null>(null);
+  const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [showEditModal, setShowEditModal] = useState(false);
@@ -37,10 +88,14 @@ export default function StudentProfile() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
-      if (!user) router.push("/");
-      else fetchStudent();
+      if (!user) {
+        router.push("/");
+      } else {
+        fetchStudent();
+      }
     });
     return () => unsub();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
 
   useEffect(() => {
@@ -52,6 +107,8 @@ export default function StudentProfile() {
   /* ---------------- FETCH ---------------- */
 
   const fetchStudent = async () => {
+    if (!studentId) return;
+    
     try {
       const ref = doc(db, "students", studentId);
       const snap = await getDoc(ref);
@@ -61,7 +118,7 @@ export default function StudentProfile() {
         return;
       }
 
-      const studentData = { id: snap.id, ...snap.data() };
+      const studentData = { id: snap.id, ...snap.data() } as Student;
       setStudent(studentData);
 
       if (studentData.currentAssessmentId) {
@@ -70,7 +127,7 @@ export default function StudentProfile() {
         );
 
         if (aSnap.exists()) {
-          const assessmentData = { id: aSnap.id, ...aSnap.data() };
+          const assessmentData = { id: aSnap.id, ...aSnap.data() } as Assessment;
           setAssessment(assessmentData);
 
           // ✅ Load existing report if already generated
@@ -105,8 +162,8 @@ export default function StudentProfile() {
 
   /* ---------------- IMPROVED SCORE EXTRACTION ---------------- */
 
-  const extractDetailedMetrics = () => {
-    if (!assessment?.results) {
+  const extractDetailedMetrics = (): DetailedScore[] | null => {
+    if (!assessment?.results || !Array.isArray(assessment.results)) {
       console.error("No assessment results available");
       return null;
     }
@@ -114,14 +171,20 @@ export default function StudentProfile() {
     console.log("Extracting metrics from results:", assessment.results);
 
     const results = assessment.results;
-    const detailedScores = [];
+    const detailedScores: DetailedScore[] = [];
 
     // Process each game result
-    results.forEach((result: any) => {
-      const metrics = [];
+    results.forEach((result: GameResult) => {
+      // Skip if required fields are missing
+      if (!result || !result.domain || typeof result.accuracy !== 'number') {
+        console.warn("Skipping invalid result:", result);
+        return;
+      }
+
+      const metrics: Metric[] = [];
       
       // Common metrics
-      if (result.avgReaction) {
+      if (result.avgReaction !== undefined && result.avgReaction !== null) {
         metrics.push({
           label: "Avg Reaction Time",
           value: `${result.avgReaction}ms`
@@ -132,23 +195,44 @@ export default function StudentProfile() {
       switch (result.gameId) {
         case "focus_tap":
           metrics.push(
-            { label: "Hits", value: `${result.hits}/${result.totalRounds}` },
-            { label: "Misses", value: result.misses },
-            { label: "False Taps", value: result.falseTaps }
+            { 
+              label: "Hits", 
+              value: `${result.hits ?? 0}/${result.totalRounds ?? 0}` 
+            },
+            { 
+              label: "Misses", 
+              value: result.misses ?? 0 
+            },
+            { 
+              label: "False Taps", 
+              value: result.falseTaps ?? 0 
+            }
           );
           break;
         
         case "spot_difference":
           metrics.push(
-            { label: "Correct", value: `${result.correct}/${result.totalRounds}` },
-            { label: "Wrong", value: result.wrong }
+            { 
+              label: "Correct", 
+              value: `${result.correct ?? 0}/${result.totalRounds ?? 0}` 
+            },
+            { 
+              label: "Wrong", 
+              value: result.wrong ?? 0 
+            }
           );
           break;
         
         case "memory_path":
           metrics.push(
-            { label: "Correct Rounds", value: `${result.correctRounds}/${result.totalRounds}` },
-            { label: "Max Sequence", value: result.maxSequenceLength }
+            { 
+              label: "Correct Rounds", 
+              value: `${result.correctRounds ?? 0}/${result.totalRounds ?? 0}` 
+            },
+            { 
+              label: "Max Sequence", 
+              value: result.maxSequenceLength ?? 0 
+            }
           );
           break;
       }
@@ -156,7 +240,7 @@ export default function StudentProfile() {
       detailedScores.push({
         name: formatDomain(result.domain),
         domain: result.domain,
-        gameUsed: result.gameName,
+        gameUsed: result.gameName || result.gameId || "Unknown Game",
         score: result.accuracy,
         metrics,
         rawData: result
@@ -164,13 +248,15 @@ export default function StudentProfile() {
     });
 
     console.log("Extracted detailed scores:", detailedScores);
-    return detailedScores;
+    
+    // Return null if no valid scores were extracted
+    return detailedScores.length > 0 ? detailedScores : null;
   };
 
-  const extractScore = (domains: string[]) => {
-    if (!assessment?.results) return null;
-    const found = assessment.results.find((r: any) =>
-      domains.includes(r.domain)
+  const extractScore = (domains: string[]): number | null => {
+    if (!assessment?.results || !Array.isArray(assessment.results)) return null;
+    const found = assessment.results.find((r: GameResult) =>
+      r && r.domain && domains.includes(r.domain)
     );
     return found?.accuracy ?? null;
   };
@@ -179,12 +265,17 @@ export default function StudentProfile() {
     attention: extractScore(["attention"]),
     memory: extractScore(["working_memory", "memory"]),
     processing: extractScore(["processing", "visual_attention"]),
-    impulse: extractScore(["impulse_control"]) // Note: This might not exist in your current data
+    impulse: extractScore(["impulse_control"])
   };
 
   /* ---------------- INTELLIGENT REPORT GENERATION ---------------- */
 
   const generateIntelligentReport = () => {
+    if (!student) {
+      console.error("No student data available");
+      return null;
+    }
+
     const detailedScores = extractDetailedMetrics();
     if (!detailedScores || detailedScores.length === 0) {
       console.error("No detailed scores available");
@@ -193,7 +284,7 @@ export default function StudentProfile() {
 
     // Calculate overall performance
     const avgScore = Math.round(
-      detailedScores.reduce((sum, s) => sum + s.score, 0) / detailedScores.length
+      detailedScores.reduce((sum, s) => sum + (s.score || 0), 0) / detailedScores.length
     );
 
     // Identify strengths (scores >= 80)
@@ -223,15 +314,23 @@ export default function StudentProfile() {
       // Add game-specific insights
       const data = score.rawData;
       if (data.gameId === "focus_tap") {
-        observation += `Child achieved ${data.hits || 0} successful taps out of ${data.totalRounds || 0} rounds`;
-        if (data.falseTaps > 0) {
-          observation += `, with ${data.falseTaps} premature response(s)`;
+        const hits = data.hits ?? 0;
+        const totalRounds = data.totalRounds ?? 0;
+        const falseTaps = data.falseTaps ?? 0;
+        
+        observation += `Child achieved ${hits} successful taps out of ${totalRounds} rounds`;
+        if (falseTaps > 0) {
+          observation += `, with ${falseTaps} premature response(s)`;
         }
         observation += `.`;
       } else if (data.gameId === "spot_difference") {
-        observation += `Successfully identified differences in ${data.correct || 0} out of ${data.totalRounds || 0} rounds.`;
+        const correct = data.correct ?? 0;
+        const totalRounds = data.totalRounds ?? 0;
+        observation += `Successfully identified differences in ${correct} out of ${totalRounds} rounds.`;
       } else if (data.gameId === "memory_path") {
-        observation += `Recalled sequences up to ${data.maxSequenceLength || 0} items, completing ${data.correctRounds || 0} rounds successfully.`;
+        const maxSeq = data.maxSequenceLength ?? 0;
+        const correctRounds = data.correctRounds ?? 0;
+        observation += `Recalled sequences up to ${maxSeq} items, completing ${correctRounds} rounds successfully.`;
       }
 
       return {
@@ -281,13 +380,11 @@ export default function StudentProfile() {
 
     // Visual attention recommendations
     const visualScore = detailedScores.find(s => s.domain === "visual_attention");
-    if (visualScore) {
-      if (visualScore.score < 70) {
-        recommendations.push({
-          title: "Visual Discrimination Activities",
-          description: "Include spot-the-difference games, pattern recognition, and visual sorting activities to improve visual processing."
-        });
-      }
+    if (visualScore && visualScore.score < 70) {
+      recommendations.push({
+        title: "Visual Discrimination Activities",
+        description: "Include spot-the-difference games, pattern recognition, and visual sorting activities to improve visual processing."
+      });
     }
 
     // General recommendation
@@ -338,7 +435,7 @@ export default function StudentProfile() {
     const finalReport = {
       studentName: student.name,
       age: student.age,
-      assessmentDate: assessment.completedAt?.toDate?.() || new Date(),
+      assessmentDate: assessment?.completedAt?.toDate?.() || new Date(),
       generatedAt: new Date().toISOString(),
       
       executiveSummary,
@@ -364,7 +461,8 @@ export default function StudentProfile() {
     console.log("Report sections check:", {
       hasDetailedAnalysis: detailedAnalysis.length > 0,
       hasRecommendations: recommendations.length > 0,
-      hasNextSteps: nextSteps.length > 0
+      hasNextSteps: nextSteps.length > 0,
+      detailedScoresCount: detailedScores.length
     });
 
     return finalReport;
@@ -373,7 +471,10 @@ export default function StudentProfile() {
   /* ---------------- REPORT GENERATION ---------------- */
 
   const handleGenerateReport = async () => {
-    if (!assessment) return;
+    if (!assessment) {
+      alert("No assessment data available");
+      return;
+    }
 
     // ✅ If already generated, just show it
     if (assessment.reportGenerated && assessment.report) {
@@ -400,6 +501,7 @@ export default function StudentProfile() {
         detailedAnalysisLength: report.detailedAnalysis?.length,
         recommendationsLength: report.recommendations?.length,
         nextStepsLength: report.nextSteps?.length,
+        detailedScoresLength: report.detailedScores?.length,
         fullReport: JSON.stringify(report, null, 2)
       });
 
@@ -419,7 +521,8 @@ export default function StudentProfile() {
       console.log("Verified report sections:", {
         detailedAnalysisLength: savedReport?.detailedAnalysis?.length,
         recommendationsLength: savedReport?.recommendations?.length,
-        nextStepsLength: savedReport?.nextSteps?.length
+        nextStepsLength: savedReport?.nextSteps?.length,
+        detailedScoresLength: savedReport?.detailedScores?.length
       });
 
       setGeneratedReport(report);
@@ -434,7 +537,9 @@ export default function StudentProfile() {
 
   /* ---------------- UTILITY ---------------- */
 
-  function formatDomain(domain: string) {
+  function formatDomain(domain: string): string {
+    if (!domain) return "Unknown Domain";
+    
     const formatted = domain
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -515,16 +620,16 @@ export default function StudentProfile() {
               ["Attention", scores.attention, "bg-blue-500"],
               ["Working Memory", scores.memory, "bg-green-500"],
               ["Visual Processing", scores.processing, "bg-purple-500"],
-            ].map(([label, value, color]: any) => (
-              <div key={label} className="rounded-2xl border bg-gray-50 p-5">
-                <p className="text-sm text-gray-600 mb-2">{label}</p>
+            ].map(([label, value, color]) => (
+              <div key={label as string} className="rounded-2xl border bg-gray-50 p-5">
+                <p className="text-sm text-gray-600 mb-2">{label as string}</p>
                 <p className="text-3xl font-bold text-gray-900 mb-3">
                   {value !== null ? `${value}%` : "—"}
                 </p>
                 <div className="w-full bg-gray-200 h-2 rounded-full">
                   <div
-                    className={`${color} h-2 rounded-full`}
-                    style={{ width: `${value || 0}%` }}
+                    className={`${color as string} h-2 rounded-full`}
+                    style={{ width: `${(value as number) || 0}%` }}
                   />
                 </div>
               </div>

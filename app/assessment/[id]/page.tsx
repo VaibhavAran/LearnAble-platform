@@ -23,6 +23,14 @@ import MemoryPathGame from "../../components/games/MemoryPathGame";
 
 import { Loader2 } from "lucide-react";
 
+
+interface Student {
+  id: string;
+  name: string;
+  age: number;
+}
+
+
 const GAME_COMPONENTS: Record<string, any> = {
   focus_tap: FocusTapGame,
   spot_difference: SpotTheDifference,
@@ -33,13 +41,12 @@ export default function AssessmentPage() {
   const { id } = useParams();
   const router = useRouter();
 
-  const [student, setStudent] = useState<any>(null);
+  const [student, setStudent] = useState<Student | null>(null);
   const [games, setGames] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  /* ---------------- AUTH + DATA ---------------- */
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -49,19 +56,24 @@ export default function AssessmentPage() {
       }
 
       const snap = await getDoc(doc(db, "students", id as string));
+
       if (!snap.exists()) {
         router.push("/dashboard");
         return;
       }
 
-      const studentData = { id: snap.id, ...snap.data() };
+      const studentData: Student = {
+        id: snap.id,
+        ...(snap.data() as Omit<Student, "id">),
+      };
+
       setStudent(studentData);
       setGames(getAssessmentGames(studentData.age));
       setLoading(false);
     });
 
     return () => unsub();
-  }, [id]);
+  }, [id, router]);
 
   /* ---------------- GAME FLOW ---------------- */
 
@@ -77,6 +89,8 @@ export default function AssessmentPage() {
   };
 
   const finishAssessment = async (finalResults: any[]) => {
+    if (!student) return;
+
     const assessmentRef = await addDoc(collection(db, "assessments"), {
       studentId: student.id,
       studentName: student.name,
@@ -122,10 +136,9 @@ export default function AssessmentPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
 
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
       <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b">
         <div className="max-w-7xl mx-auto px-6 py-4">
-
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
@@ -157,14 +170,10 @@ export default function AssessmentPage() {
         </div>
       </header>
 
-      {/* ================= CONTENT ================= */}
+      {/* CONTENT */}
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-5xl">
-
-          {/* Game Card */}
           <div className="bg-white rounded-3xl shadow-xl border p-6 md:p-10">
-
-            {/* Game Title */}
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-900">
                 {currentGame.name}
@@ -174,14 +183,12 @@ export default function AssessmentPage() {
               </p>
             </div>
 
-            {/* Game Area */}
             <div className="flex justify-center">
               <GameComponent
                 studentAge={student.age}
                 onComplete={handleGameComplete}
               />
             </div>
-
           </div>
         </div>
       </main>
