@@ -31,8 +31,8 @@ export default function FocusTapGame({
   const [falseTaps, setFalseTaps] = useState(0);
   const [reactionTimes, setReactionTimes] = useState<number[]>([]);
 
-  const targets = ["☆"];
-  const distractors = ["✯", "✬", "✧"];
+  const targets = ["☺️"];
+  const distractors = ["😊", "🙂"];
 
   useEffect(() => {
     if (phase === "play") startRound();
