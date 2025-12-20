@@ -441,15 +441,17 @@ export async function POST(request: NextRequest) {
     });
 
     // Generate buffer
-    const buffer = await Packer.toBuffer(doc);
+   const buffer = await Packer.toBuffer(doc);
+const uint8Array = new Uint8Array(buffer);
 
-    // Return as downloadable file
-    return new NextResponse(buffer, {
-      headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename="${report.studentName}_Assessment_Report.docx"`
-      }
-    });
+return new NextResponse(uint8Array, {
+  headers: {
+    "Content-Type":
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "Content-Disposition": `attachment; filename="${report.studentName}_Assessment_Report.docx"`,
+  },
+});
+
 
   } catch (error) {
     console.error('Error generating DOCX:', error);
