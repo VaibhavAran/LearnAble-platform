@@ -46,13 +46,14 @@ This makes assessment engaging for children and useful for adults managing learn
 - **Styling:** Tailwind CSS  
 - **Backend Services:** Firebase  
 - **Authentication:** Firebase Auth  
-- **Database:** Cloud Firestore  
+- **Database:** Cloud Firestore
 
 ---
 
 ## Google Technologies Used
 - **Firebase Authentication** – secure login & access control  
-- **Cloud Firestore** – real-time data storage  
+- **Cloud Firestore** – real-time data storage
+- **Google Ai Studio** - real-time integrated chatbot
 
 
 ---
