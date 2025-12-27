@@ -7,6 +7,8 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { db, auth } from "../../../firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
+
+import ChatBot from "../../components/ChatBot";
 import {
   ArrowLeft,
   Edit,
@@ -693,6 +695,9 @@ export default function StudentProfile() {
           report={generatedReport}
         />
       )}
+            <ChatBot />
+
     </div>
+    
   );
 }

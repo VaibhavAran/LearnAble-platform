@@ -12,6 +12,7 @@ import StudentCard from "../components/StudentCard";
 import AddStudentModal from "../components/AddStudentModal";
 import { Plus, Loader2 } from "lucide-react";
 
+
 export default function Dashboard() {
   const router = useRouter();
 
@@ -258,6 +259,8 @@ export default function Dashboard() {
         onClose={() => setShowAddModal(false)}
         onStudentAdded={handleStudentAdded}
       />
+
+
     </div>
   );
 }
