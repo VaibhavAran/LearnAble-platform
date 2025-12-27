@@ -23,7 +23,7 @@ There is a need for a child-friendly, data-driven system that can assess cogniti
 ## Solution
 LearnAble solves this by:
 - Using **interactive games** instead of exams  
-- Collecting performance data silently in the background  
+- Collecting performance data in the background  
 - Generating **structured learning reports**  
 - Presenting insights in a clear, non-technical way  
 
