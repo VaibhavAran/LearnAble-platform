@@ -116,10 +116,10 @@ export default function FocusTapGame({
   if (phase === "intro") {
     return (
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center">
-        <div className="text-6xl mb-4">⭐</div>
+        <div className="text-6xl mb-4">☺️</div>
         <h2 className="text-2xl font-bold mb-2">Focus Tap</h2>
         <p className="text-gray-600 mb-6 leading-relaxed">
-          Tap <strong>only</strong> when you see the ⭐ star.<br />
+          Tap <strong>only</strong> when you see the ☺️ star.<br />
           Don’t tap other shapes.
         </p>
 
